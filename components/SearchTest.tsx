@@ -1,30 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, TestTube, Plus, Search } from "lucide-react"
-import { localStorageService } from "@/lib/localStorage"
-import { dateUtils } from "@/lib/dateUtils"
-import type { Task } from "@/types/task"
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { dateUtils } from "@/lib/dateUtils";
+import { localStorageService } from "@/lib/localStorage";
+import type { Task } from "@/types/task";
+import { CheckCircle, Plus, Search, TestTube } from "lucide-react";
+import { useState } from "react";
 
 export default function SearchTest() {
-  const [testResults, setTestResults] = useState<Array<{ test: string; passed: boolean; details: string }>>([])
-  const [isRunning, setIsRunning] = useState(false)
-  const [sampleTasks, setSampleTasks] = useState<Task[]>([])
+  const [testResults, setTestResults] = useState<
+    Array<{ test: string; passed: boolean; details: string }>
+  >([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [sampleTasks, setSampleTasks] = useState<Task[]>([]);
 
   const createSampleTasks = () => {
     // Clear existing tasks first
-    localStorageService.clearAllTasks()
+    localStorageService.clearAllTasks();
 
-    const now = new Date()
-    const yesterday = new Date(now)
-    yesterday.setDate(yesterday.getDate() - 1)
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    const lastWeek = new Date(now)
-    lastWeek.setDate(lastWeek.getDate() - 7)
+    const lastWeek = new Date(now);
+    lastWeek.setDate(lastWeek.getDate() - 7);
 
     const sampleData = [
       {
@@ -67,11 +69,11 @@ export default function SearchTest() {
         isCompleted: false,
         createdAt: yesterday.toISOString(),
       },
-    ]
+    ];
 
-    const tasks: Task[] = []
+    const tasks: Task[] = [];
     sampleData.forEach((data, index) => {
-      const createdDate = new Date(data.createdAt)
+      const createdDate = new Date(data.createdAt);
       const task: Task = {
         id: `test-${index}-${Date.now()}`,
         title: data.title,
@@ -83,156 +85,172 @@ export default function SearchTest() {
         dayAdded: dateUtils.getDayName(createdDate),
         name: data.name,
         role: data.role,
-      }
-      tasks.push(task)
-    })
+      };
+      tasks.push(task);
+    });
 
-    localStorageService.saveTasks(tasks)
-    setSampleTasks(tasks)
-    return tasks
-  }
+    localStorageService.saveTasks(tasks);
+    setSampleTasks(tasks);
+    return tasks;
+  };
 
   const runSearchTests = async () => {
-    setIsRunning(true)
-    setTestResults([])
+    setIsRunning(true);
+    setTestResults([]);
 
-    const tasks = createSampleTasks()
-    const results: Array<{ test: string; passed: boolean; details: string }> = []
+    const tasks = createSampleTasks();
+    const results: Array<{ test: string; passed: boolean; details: string }> =
+      [];
 
     // Test 1: Text search in titles
-    const titleSearch = localStorageService.searchTasks("groceries")
+    const titleSearch = localStorageService.searchTasks("groceries");
     results.push({
       test: "Title Search",
-      passed: titleSearch.length === 1 && titleSearch[0].title.includes("groceries"),
+      passed:
+        titleSearch.length === 1 && titleSearch[0].title.includes("groceries"),
       details: `Found ${titleSearch.length} task(s) containing "groceries" in title`,
-    })
+    });
 
     // Test 2: Text search in descriptions
-    const descriptionSearch = localStorageService.searchTasks("authentication")
+    const descriptionSearch = localStorageService.searchTasks("authentication");
     results.push({
       test: "Description Search",
-      passed: descriptionSearch.length === 1 && descriptionSearch[0].description?.includes("authentication"),
+      passed:
+        descriptionSearch.length === 1 &&
+        (descriptionSearch[0].description?.includes("authentication") ?? false),
       details: `Found ${descriptionSearch.length} task(s) containing "authentication" in description`,
-    })
+    });
 
     // Test 3: Case insensitive search
-    const caseSearch = localStorageService.searchTasks("MEETING")
+    const caseSearch = localStorageService.searchTasks("MEETING");
     results.push({
       test: "Case Insensitive Search",
-      passed: caseSearch.length === 1 && caseSearch[0].title.toLowerCase().includes("meeting"),
+      passed:
+        caseSearch.length === 1 &&
+        caseSearch[0].title.toLowerCase().includes("meeting"),
       details: `Found ${caseSearch.length} task(s) with case-insensitive "MEETING" search`,
-    })
+    });
 
     // Test 4: Date search (today's date)
-    const todayDate = dateUtils.formatDateForSearch(new Date())
-    const dateSearch = localStorageService.searchTasks(todayDate)
-    const todayTasks = tasks.filter((t) => t.dateAdded === todayDate)
+    const todayDate = dateUtils.formatDateForSearch(new Date());
+    const dateSearch = localStorageService.searchTasks(todayDate);
+    const todayTasks = tasks.filter((t) => t.dateAdded === todayDate);
     results.push({
       test: "Date Search (Today)",
       passed: dateSearch.length === todayTasks.length,
       details: `Found ${dateSearch.length} task(s) for today (${todayDate}), expected ${todayTasks.length}`,
-    })
+    });
 
     // Test 5: Partial date search
-    const yearMonth = todayDate.substring(0, 7) // YYYY-MM
-    const partialDateSearch = localStorageService.searchTasks(yearMonth)
+    const yearMonth = todayDate.substring(0, 7); // YYYY-MM
+    const partialDateSearch = localStorageService.searchTasks(yearMonth);
     results.push({
       test: "Partial Date Search",
       passed: partialDateSearch.length >= 1,
       details: `Found ${partialDateSearch.length} task(s) for ${yearMonth}`,
-    })
+    });
 
     // Test 6: Day name search
-    const todayDayName = dateUtils.getDayName(new Date()).toLowerCase()
-    const daySearch = localStorageService.searchTasks(todayDayName)
+    const todayDayName = dateUtils.getDayName(new Date()).toLowerCase();
+    const daySearch = localStorageService.searchTasks(todayDayName);
     results.push({
       test: "Day Name Search",
       passed: daySearch.length >= 1,
       details: `Found ${daySearch.length} task(s) for "${todayDayName}"`,
-    })
+    });
 
     // Test 7: Filter completed tasks only
-    const completedOnly = localStorageService.searchTasks("", true, false)
-    const expectedCompleted = tasks.filter((t) => t.isCompleted)
+    const completedOnly = localStorageService.searchTasks("", true, false);
+    const expectedCompleted = tasks.filter((t) => t.isCompleted);
     results.push({
       test: "Completed Tasks Filter",
       passed: completedOnly.length === expectedCompleted.length,
       details: `Found ${completedOnly.length} completed task(s), expected ${expectedCompleted.length}`,
-    })
+    });
 
     // Test 8: Filter pending tasks only
-    const pendingOnly = localStorageService.searchTasks("", false, true)
-    const expectedPending = tasks.filter((t) => !t.isCompleted)
+    const pendingOnly = localStorageService.searchTasks("", false, true);
+    const expectedPending = tasks.filter((t) => !t.isCompleted);
     results.push({
       test: "Pending Tasks Filter",
       passed: pendingOnly.length === expectedPending.length,
       details: `Found ${pendingOnly.length} pending task(s), expected ${expectedPending.length}`,
-    })
+    });
 
     // Test 9: Combined search (text + filter)
-    const combinedSearch = localStorageService.searchTasks("report", false, true)
+    const combinedSearch = localStorageService.searchTasks(
+      "report",
+      false,
+      true
+    );
     const expectedCombined = tasks.filter(
       (t) =>
-        !t.isCompleted && (t.title.toLowerCase().includes("report") || t.description?.toLowerCase().includes("report")),
-    )
+        !t.isCompleted &&
+        (t.title.toLowerCase().includes("report") ||
+          (t.description?.toLowerCase().includes("report") ?? false))
+    );
     results.push({
       test: "Combined Search (Text + Filter)",
       passed: combinedSearch.length === expectedCombined.length,
       details: `Found ${combinedSearch.length} pending task(s) containing "report", expected ${expectedCombined.length}`,
-    })
+    });
 
     // Test 10: Empty search returns all tasks
-    const allTasks = localStorageService.searchTasks("")
+    const allTasks = localStorageService.searchTasks("");
     results.push({
       test: "Empty Search Returns All",
       passed: allTasks.length === tasks.length,
       details: `Empty search returned ${allTasks.length} task(s), expected ${tasks.length}`,
-    })
+    });
 
     // Test 11: No results search
-    const noResults = localStorageService.searchTasks("nonexistentterm12345")
+    const noResults = localStorageService.searchTasks("nonexistentterm12345");
     results.push({
       test: "No Results Search",
       passed: noResults.length === 0,
       details: `Search for non-existent term returned ${noResults.length} results (should be 0)`,
-    })
+    });
 
     // Test 12: Special characters in search
-    const specialCharSearch = localStorageService.searchTasks("bug in code")
+    const specialCharSearch = localStorageService.searchTasks("bug in code");
     results.push({
       test: "Multi-word Search",
       passed: specialCharSearch.length >= 1,
       details: `Multi-word search "bug in code" found ${specialCharSearch.length} result(s)`,
-    })
+    });
 
     // Test 13: Name search
-    const nameSearch = localStorageService.searchTasks("Sarah")
+    const nameSearch = localStorageService.searchTasks("Sarah");
     results.push({
       test: "Name Search",
-      passed: nameSearch.length === 1 && nameSearch[0].name?.includes("Sarah"),
+      passed:
+        nameSearch.length === 1 &&
+        (nameSearch[0].name?.includes("Sarah") ?? false),
       details: `Found ${nameSearch.length} task(s) assigned to "Sarah"`,
-    })
+    });
 
     // Test 14: Role search
-    const roleSearch = localStorageService.searchTasks("Developer")
+    const roleSearch = localStorageService.searchTasks("Developer");
     results.push({
       test: "Role Search",
-      passed: roleSearch.length === 1 && roleSearch[0].role?.includes("Developer"),
+      passed:
+        roleSearch.length === 1 &&
+        (roleSearch[0].role?.includes("Developer") ?? false),
       details: `Found ${roleSearch.length} task(s) with "Developer" role`,
-    })
+    });
 
-    setTestResults(results)
-    setIsRunning(false)
-  }
+    setTestResults(results);
+    setIsRunning(false);
+  };
 
   const clearTestData = () => {
-    localStorageService.clearAllTasks()
-    setSampleTasks([])
-    setTestResults([])
-  }
+    localStorageService.clearAllTasks();
+    setSampleTasks([]);
+    setTestResults([]);
+  };
 
-  const passedTests = testResults.filter((r) => r.passed).length
-  const totalTests = testResults.length
+  const passedTests = testResults.filter((r) => r.passed).length;
+  const totalTests = testResults.length;
 
   return (
     <div className="space-y-6">
@@ -245,7 +263,11 @@ export default function SearchTest() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={runSearchTests} disabled={isRunning} className="flex items-center gap-2">
+            <Button
+              onClick={runSearchTests}
+              disabled={isRunning}
+              className="flex items-center gap-2"
+            >
               {isRunning ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -265,14 +287,20 @@ export default function SearchTest() {
 
           {testResults.length > 0 && (
             <Alert
-              className={passedTests === totalTests ? "border-green-200 bg-green-50" : "border-orange-200 bg-orange-50"}
+              className={
+                passedTests === totalTests
+                  ? "border-green-200 bg-green-50"
+                  : "border-orange-200 bg-orange-50"
+              }
             >
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
                 <strong>
                   Test Results: {passedTests}/{totalTests} tests passed
                 </strong>
-                {passedTests === totalTests ? " 🎉 All tests passed!" : " ⚠️ Some tests failed"}
+                {passedTests === totalTests
+                  ? " 🎉 All tests passed!"
+                  : " ⚠️ Some tests failed"}
               </AlertDescription>
             </Alert>
           )}
@@ -290,15 +318,29 @@ export default function SearchTest() {
           <CardContent>
             <div className="space-y-2">
               {sampleTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                >
                   <div className="flex-1">
                     <div className="font-medium text-sm">{task.title}</div>
-                    <div className="text-xs text-gray-600">{task.description}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {task.dateAdded} ({task.dayAdded}) - {task.isCompleted ? "Completed" : "Pending"}
+                    <div className="text-xs text-gray-600">
+                      {task.description}
                     </div>
-                    {task.name && <div className="text-xs text-gray-500">Name: {task.name}</div>}
-                    {task.role && <div className="text-xs text-gray-500">Role: {task.role}</div>}
+                    <div className="text-xs text-gray-500 mt-1">
+                      {task.dateAdded} ({task.dayAdded}) -{" "}
+                      {task.isCompleted ? "Completed" : "Pending"}
+                    </div>
+                    {task.name && (
+                      <div className="text-xs text-gray-500">
+                        Name: {task.name}
+                      </div>
+                    )}
+                    {task.role && (
+                      <div className="text-xs text-gray-500">
+                        Role: {task.role}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={task.isCompleted ? "default" : "secondary"}>
                     {task.isCompleted ? "Done" : "Pending"}
@@ -321,14 +363,20 @@ export default function SearchTest() {
                 <div
                   key={index}
                   className={`p-3 rounded-lg border ${
-                    result.passed ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
+                    result.passed
+                      ? "border-green-200 bg-green-50"
+                      : "border-red-200 bg-red-50"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{result.test}</span>
-                    <Badge variant={result.passed ? "default" : "destructive"}>{result.passed ? "PASS" : "FAIL"}</Badge>
+                    <Badge variant={result.passed ? "default" : "destructive"}>
+                      {result.passed ? "PASS" : "FAIL"}
+                    </Badge>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">{result.details}</div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {result.details}
+                  </div>
                 </div>
               ))}
             </div>
@@ -336,5 +384,5 @@ export default function SearchTest() {
         </Card>
       )}
     </div>
-  )
+  );
 }
